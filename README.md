@@ -9,5 +9,5 @@
 * Pneumonia(肺炎)  
 * 氣喘  
   
-註:本次剔除空汙因子氮氧化物NO、NO2、NOx
+註 : 本次剔除空汙因子NO、NO2、NOx
 
