@@ -8,7 +8,7 @@
 * 慢性Bronchitis(慢性支氣管炎)
 * Pneumonia(肺炎)
 * 氣喘  
-註 : 本次剔除空汙因子NO、NO2、NOx
+註 : 本次剔除空汙因子NO、NO2、NOx  
 ## 1_importance
 * 四種空汙因子對於各疾病在lag 0至4的重要程度(以Random Forest的Permutation Importance計算得出)
 * 對於上呼吸道疾病，除了過敏性鼻炎於lag=0時，重要程度皆為PM2.5最高
