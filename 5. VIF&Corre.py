@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # 空氣因子列表
-pollutants = ["NO", "NO2", "NOx", "O3", "PM25", "PM10", "SO2"]
+# pollutants = ["NO", "NO2", "NOx", "O3", "PM25", "PM10", "SO2"]
+pollutants = ["NO2", "O3", "PM25", "SO2"]
 
 # 需要處理的資料夾
 input_folder = "0_疾病暴露資料"
@@ -47,7 +48,7 @@ else:
     vif_df["high_collinearity"] = vif_df["VIF"] > VIF_THRESHOLD
 
     # 儲存 VIF 結果
-    output_vif_file = os.path.join(output_folder, "VIF_all_diseases.csv")
+    output_vif_file = os.path.join(output_folder, "VIF_all_diseases_2.csv")
     vif_df.to_csv(output_vif_file, index=False)
     print(f"✅ VIF 計算完成，結果儲存至：{output_vif_file}\n")
     print(vif_df)
@@ -69,7 +70,7 @@ else:
     plt.title("Pollutant Correlation Matrix")
     plt.tight_layout()
 
-    output_corr_img = os.path.join(output_folder, "Correlation_matrix.png")
+    output_corr_img = os.path.join(output_folder, "Correlation_matrix_2.png")
     plt.savefig(output_corr_img, dpi=300)
     plt.close()
     print(f"✅ Correlation Matrix 圖片已儲存至：{output_corr_img}")
