@@ -11,10 +11,10 @@ plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Microsoft Ya
 plt.rcParams['axes.unicode_minus'] = False
 
 input_folder = "0_疾病暴露資料"
-output_folder = "1-3_vif_importance_upper"
+output_folder = "1-4_vif_importance_lower"
 os.makedirs(output_folder, exist_ok=True)
 
-target_diseases = ["URI", "急性Rhinosinusitis", "Allergic rhinitis", "Influenza"]
+target_diseases = ["急性Bronchitis", "慢性Bronchitis", "Pneumonia", "氣喘"]
 pollutants = ["NO2", "O3", "PM25", "SO2"]
 
 for filename in os.listdir(input_folder):
