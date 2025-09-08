@@ -13,8 +13,11 @@ plt.rcParams['axes.unicode_minus'] = False
 input_folder = "0_疾病暴露資料"
 output_folder = "1-2_importance_lower"
 csv_output_folder = "1-2_importance_lower/csv"
+importance_csv_folder = "1-2_importance_lower/importance_value"  # === 新增輸出資料夾 ===
+
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs(csv_output_folder, exist_ok=True)
+os.makedirs(importance_csv_folder, exist_ok=True)  # === 新增 ===
 
 target_diseases = ["急性Bronchitis", "慢性Bronchitis", "Pneumonia", "氣喘"]
 pollutants = ["O3", "PM10", "PM25", "SO2"]
@@ -48,30 +51,26 @@ for filename in os.listdir(input_folder):
                 temp["week_shifted"].astype(str)
             )
 
-            # 只保留 key 與該 offset 的污染物欄位，並加上 offset 後綴
             temp = temp[["key_shifted"] + pollutants].copy()
             temp = temp.rename(columns={p: f"{p}_{offset}" for p in pollutants})
 
             if cumulative_df is None:
                 cumulative_df = temp
             else:
-                # ✅ inner merge：只有所有 offset 都存在的 key 才會被保留
                 cumulative_df = cumulative_df.merge(temp, on="key_shifted", how="inner")
 
-        # 若這個 lag 沒有任何完整窗口，跳過
         if cumulative_df is None or cumulative_df.empty:
             continue
 
-        # 計算各污染物的累積和（因為是 inner merge，這裡不會有 NaN）
+        # 計算各污染物的累積和
         for p in pollutants:
             cols = [f"{p}_{o}" for o in range(lag + 1)]
-            # 保險起見：若缺欄位（理論上不會）就跳過
             cols = [c for c in cols if c in cumulative_df.columns]
             if len(cols) == 0:
                 continue
             cumulative_df[p + "_sum"] = cumulative_df[cols].sum(axis=1)
 
-        # 與目標值對齊（使用當週的就醫率）
+        # 與目標值對齊
         df_target = df.copy()
         df_target["key_shifted"] = df_target["key"]
         merged = pd.merge(
@@ -84,23 +83,20 @@ for filename in os.listdir(input_folder):
         if merged.empty:
             continue
 
-        # 解析 key → region/year/week
         merged[["region", "year", "week"]] = merged["key_shifted"].str.split("_", expand=True)
         merged["year"] = merged["year"].astype(int)
         merged["week"] = merged["week"].astype(int)
-
-        # 依照地區、年份、週數排序
         merged = merged.sort_values(by=["region", "year", "week"]).reset_index(drop=True)
 
         if len(merged) < 20:
             continue
 
-        # ==== 輸出 CSV（排序 + 指定欄位順序）====
+        # ==== 輸出累積 CSV ====
         csv_path = os.path.join(csv_output_folder, f"{disease_name}_lag0to{lag}_cumulative_data.csv")
         output_cols = ["region", "year", "week", "case_per_capita(‰)"] + [p + "_sum" for p in pollutants]
         merged[output_cols].to_csv(csv_path, index=False, encoding='utf_8_sig')
 
-        # ==== 建模與繪圖 ====
+        # ==== 建模與計算重要性 ====
         X = merged[[p + "_sum" for p in pollutants]].copy()
         X.columns = pollutants
         y = merged["case_per_capita(‰)"]
@@ -109,9 +105,24 @@ for filename in os.listdir(input_folder):
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
 
-        result = permutation_importance(model, X_test, y_test, n_repeats=30, random_state=42, scoring="r2")
+        result = permutation_importance(model, X_test, y_test, n_repeats=30,
+                                        random_state=42, scoring="r2")
         sorted_idx = result.importances_mean.argsort()
 
+        # ==== 匯出重要性數值成 CSV（新增部分）====
+        importance_df = pd.DataFrame({
+            "Pollutant": X.columns,
+            "Importance_mean": result.importances_mean,
+            "Importance_std": result.importances_std
+        }).sort_values(by="Importance_mean", ascending=False)
+
+        importance_csv_path = os.path.join(
+            importance_csv_folder,
+            f"{disease_name}_lag0to{lag}_importance.csv"
+        )
+        importance_df.to_csv(importance_csv_path, index=False, encoding="utf_8_sig")
+
+        # ==== 繪圖 ====
         plt.figure(figsize=(8, 6))
         plt.barh(
             range(len(sorted_idx)),
@@ -137,4 +148,4 @@ for filename in os.listdir(input_folder):
         plt.savefig(output_path, dpi=300)
         plt.close()
 
-print("✅ 完成：各疾病 lag0~4 的特徵重要性圖與累積資料（已剔除不完整累加 + 各 region 頭尾各 lag 週）")
+print("✅ 完成：各疾病 lag0~4 的特徵重要性圖、重要性數值 (CSV)，以及累積資料")
